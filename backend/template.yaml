@@ -138,7 +138,7 @@ Resources:
   AgentCoreShortTermMemory:
     Type: AWS::BedrockAgentCore::Memory
     Properties:
-      Name: !Sub AgentMemory${EnvironmentHash}
+      Name: !Sub StudyBuddyShortTermMemory${EnvironmentHash}
       Description: Short-term memory for agent conversation persistence
       MemoryExecutionRoleArn: !GetAtt AgentCoreRole.Arn
       EventExpiryDuration: 30
