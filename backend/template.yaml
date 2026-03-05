@@ -135,77 +135,6 @@ Resources:
         External:
           - '@aws-sdk/*'
 
-  ApiGatewayStepFunctionsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: ApiGatewayStepFunctionsPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - states:StartSyncExecution
-                Resource: !Ref AgentStateMachine
-
-  AgentStateMachineLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/stepfunctions/AgentStateMachine-${EnvironmentHash}"
-      RetentionInDays: 30
-
-  AgentStateMachine:
-    Type: AWS::Serverless::StateMachine
-    Properties:
-      Type: EXPRESS
-      DefinitionUri: workflows/query-processing.asl.json
-      DefinitionSubstitutions:
-        AgentCoreInvokeFunctionArn: !GetAtt AgentCoreInvokeFunction.Arn
-      Tracing:
-        Enabled: true
-      Logging:
-        Level: ALL
-        IncludeExecutionData: true
-        Destinations:
-          - CloudWatchLogsLogGroup:
-              LogGroupArn: !GetAtt AgentStateMachineLogGroup.Arn
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - lambda:InvokeFunction
-              Resource:
-                - !GetAtt AgentCoreInvokeFunction.Arn
-            - Effect: Allow
-              Action:
-                - logs:CreateLogDelivery
-                - logs:GetLogDelivery
-                - logs:UpdateLogDelivery
-                - logs:DeleteLogDelivery
-                - logs:ListLogDeliveries
-                - logs:PutResourcePolicy
-                - logs:DescribeResourcePolicies
-                - logs:DescribeLogGroups
-                - logs:CreateLogGroup
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-                - logs:DescribeLogStreams
-              Resource: "*"
-            - Effect: Allow
-              Action:
-                - xray:PutTraceSegments
-                - xray:PutTelemetryRecords
-                - xray:GetSamplingRules
-                - xray:GetSamplingTargets
-              Resource: "*"
-
   AgentCoreShortTermMemory:
     Type: AWS::BedrockAgentCore::Memory
     Properties:
@@ -418,10 +347,6 @@ Outputs:
   AgentCoreMemoryId:
     Description: "AgentCore Short-Term Memory ID"
     Value: !GetAtt AgentCoreShortTermMemory.MemoryId
-
-  AgentStateMachineArn:
-    Description: "Step Functions State Machine ARN"
-    Value: !Ref AgentStateMachine
 
   UserPoolId:
     Description: "Cognito User Pool ID for user authentication"
