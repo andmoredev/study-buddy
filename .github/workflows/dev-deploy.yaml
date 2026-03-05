@@ -16,8 +16,8 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  BACKEND_STACK_NAME: agentcore-chatbot-backend
-  FRONTEND_STACK_NAME: agentcore-chatbot-frontend
+  BACKEND_STACK_NAME: studybuddy-ai-backend
+  FRONTEND_STACK_NAME: studybuddy-ai-frontend
   NODE_VERSION: '24'
   ENV_DESCRIPTOR: dev
 
