@@ -155,7 +155,7 @@ Resources:
           EntryPoint:
             - agent.py
           Runtime: PYTHON_3_13
-      AgentRuntimeName: !Sub Agent${EnvironmentHash}
+      AgentRuntimeName: !Sub StudyBuddy${EnvironmentHash}
       NetworkConfiguration:
         NetworkMode: PUBLIC
       RoleArn: !GetAtt AgentCoreRole.Arn
