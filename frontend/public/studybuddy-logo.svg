@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <!-- === OWL BODY === -->
+  <!-- Body shape -->
+  <ellipse cx="80" cy="100" rx="40" ry="45" fill="#4CAF50"/>
+  <!-- Belly patch -->
+  <ellipse cx="80" cy="108" rx="26" ry="30" fill="#E8F5E9"/>
+
+  <!-- === OWL HEAD === -->
+  <!-- Head -->
+  <circle cx="80" cy="58" r="32" fill="#4CAF50"/>
+  <!-- Ear tufts -->
+  <polygon points="52,32 58,48 46,44" fill="#388E3C"/>
+  <polygon points="108,32 102,48 114,44" fill="#388E3C"/>
+  <!-- Face disc -->
+  <ellipse cx="80" cy="62" rx="23" ry="20" fill="#E8F5E9"/>
+
+  <!-- === EYES (robotic style) === -->
+  <!-- Left eye socket -->
+  <circle cx="70" cy="56" r="10" fill="white" stroke="#388E3C" stroke-width="1.5"/>
+  <!-- Left iris -->
+  <circle cx="70" cy="56" r="6" fill="#1A2332"/>
+  <!-- Left pupil highlight -->
+  <circle cx="72" cy="54" r="2" fill="white"/>
+  <!-- Left small highlight -->
+  <circle cx="68" cy="58" r="1" fill="white" opacity="0.5"/>
+
+  <!-- Right eye socket -->
+  <circle cx="90" cy="56" r="10" fill="white" stroke="#388E3C" stroke-width="1.5"/>
+  <!-- Right iris -->
+  <circle cx="90" cy="56" r="6" fill="#1A2332"/>
+  <!-- Right pupil highlight -->
+  <circle cx="92" cy="54" r="2" fill="white"/>
+  <!-- Right small highlight -->
+  <circle cx="88" cy="58" r="1" fill="white" opacity="0.5"/>
+
+  <!-- === BEAK === -->
+  <polygon points="80,66 75,74 85,74" fill="#FFB74D"/>
+  <line x1="80" y1="69" x2="80" y2="74" stroke="#E8A02E" stroke-width="0.5"/>
+
+  <!-- === GRADUATION CAP === -->
+  <!-- Cap board -->
+  <polygon points="80,18 52,30 80,38 108,30" fill="#1A2332"/>
+  <!-- Cap crown -->
+  <rect x="72" y="18" width="16" height="8" rx="2" fill="#1A2332"/>
+  <!-- Tassel string -->
+  <line x1="104" y1="30" x2="108" y2="42" stroke="#FFB74D" stroke-width="1.5"/>
+  <!-- Tassel end -->
+  <circle cx="108" cy="43" r="2.5" fill="#FFB74D"/>
+
+  <!-- === ROBOT ANTENNA (subtle tech detail) === -->
+  <line x1="80" y1="18" x2="80" y2="12" stroke="#388E3C" stroke-width="1.5"/>
+  <circle cx="80" cy="10" r="2.5" fill="#FFB74D" stroke="#388E3C" stroke-width="0.8"/>
+
+  <!-- === WINGS/ARMS HOLDING BOOK === -->
+  <!-- Left wing -->
+  <path d="M40,90 Q28,85 30,105 Q32,115 45,118" fill="#388E3C" stroke="#2E7D32" stroke-width="1"/>
+  <!-- Right wing -->
+  <path d="M120,90 Q132,85 130,105 Q128,115 115,118" fill="#388E3C" stroke="#2E7D32" stroke-width="1"/>
+
+  <!-- === BOOK === -->
+  <!-- Book left page -->
+  <rect x="48" y="110" width="30" height="22" rx="2" fill="#E8F5E9" stroke="#388E3C" stroke-width="1"/>
+  <!-- Book right page -->
+  <rect x="82" y="110" width="30" height="22" rx="2" fill="white" stroke="#388E3C" stroke-width="1"/>
+  <!-- Book spine -->
+  <line x1="80" y1="108" x2="80" y2="134" stroke="#388E3C" stroke-width="2"/>
+  <!-- Book spine top curve -->
+  <path d="M48,112 Q80,106 112,112" fill="none" stroke="#388E3C" stroke-width="1.5"/>
+  <!-- Text lines on left page -->
+  <line x1="53" y1="117" x2="73" y2="117" stroke="#4CAF50" stroke-width="1" opacity="0.5"/>
+  <line x1="53" y1="121" x2="70" y2="121" stroke="#4CAF50" stroke-width="1" opacity="0.5"/>
+  <line x1="53" y1="125" x2="72" y2="125" stroke="#4CAF50" stroke-width="1" opacity="0.5"/>
+  <!-- Text lines on right page -->
+  <line x1="87" y1="117" x2="107" y2="117" stroke="#4CAF50" stroke-width="1" opacity="0.5"/>
+  <line x1="87" y1="121" x2="104" y2="121" stroke="#4CAF50" stroke-width="1" opacity="0.5"/>
+  <line x1="87" y1="125" x2="106" y2="125" stroke="#4CAF50" stroke-width="1" opacity="0.5"/>
+
+  <!-- === FEET === -->
+  <!-- Left foot -->
+  <ellipse cx="68" cy="144" rx="8" ry="4" fill="#FFB74D"/>
+  <!-- Right foot -->
+  <ellipse cx="92" cy="144" rx="8" ry="4" fill="#FFB74D"/>
+
+  <!-- === SMALL ROBOT DETAILS === -->
+  <!-- Chest circuit pattern -->
+  <circle cx="80" cy="95" r="3" fill="none" stroke="#388E3C" stroke-width="0.8" opacity="0.6"/>
+  <circle cx="80" cy="95" r="1.2" fill="#FFB74D" opacity="0.7"/>
+</svg>
