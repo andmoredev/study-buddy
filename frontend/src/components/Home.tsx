@@ -26,7 +26,7 @@ function Home() {
   return (
     <div className="home">
       <div className="home-header">
-        <img src="/studybuddy-logo.svg" alt="StudyBuddy AI" className="home-logo" />
+        <img src="/SuddyBuddyAI_NB.png" alt="StudyBuddy AI" className="home-logo" />
         <h1>StudyBuddy AI</h1>
         <p>Tu tutor inteligente 24/7</p>
       </div>
