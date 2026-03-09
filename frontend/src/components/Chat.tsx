@@ -34,6 +34,8 @@ function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const initialQuerySent = useRef(false)
   const wsServiceRef = useRef<WebSocketService | null>(null)
+  const streamingTextRef = useRef('')
+  const thinkingTextRef = useRef('')
 
   // Generate a session ID if we don't have one
   useEffect(() => {
@@ -126,15 +128,21 @@ function Chat() {
       // Move any text accumulated so far into thinking
       setStreamingText(prev => {
         if (prev) {
+          thinkingTextRef.current = thinkingTextRef.current + prev
           setThinkingText(t => t + prev)
         }
+        streamingTextRef.current = ''
         return ''
       })
     }
 
     // Handle text streaming
     if (event.data) {
-      setStreamingText(prev => prev + event.data)
+      setStreamingText(prev => {
+        const next = prev + event.data
+        streamingTextRef.current = next
+        return next
+      })
     }
 
     // Log lifecycle events
@@ -149,15 +157,20 @@ function Chat() {
 
   // Handle completion of streaming
   const handleComplete = () => {
-    if (streamingText || thinkingText) {
+    const text = streamingTextRef.current
+    const thinking = thinkingTextRef.current
+
+    if (text || thinking) {
       const agentMessage: Message = {
         id: Date.now().toString(),
-        text: streamingText,
-        ...(thinkingText ? { thinking: thinkingText } : {}),
+        text,
+        ...(thinking ? { thinking } : {}),
         sender: 'agent',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, agentMessage])
+      streamingTextRef.current = ''
+      thinkingTextRef.current = ''
       setStreamingText('')
       setThinkingText('')
     }
@@ -179,6 +192,8 @@ function Chat() {
     }
 
     setMessages(prev => [...prev, errorMessage])
+    streamingTextRef.current = ''
+    thinkingTextRef.current = ''
     setStreamingText('')
     setThinkingText('')
     setCurrentTool(null)
@@ -213,6 +228,8 @@ function Chat() {
     setMessages(prev => [...prev, userMessage])
     setInputText('')
     setIsLoading(true)
+    streamingTextRef.current = ''
+    thinkingTextRef.current = ''
     setStreamingText('')
     setThinkingText('')
 
