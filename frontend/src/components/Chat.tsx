@@ -206,6 +206,27 @@ function Chat() {
     console.log('🔌 WebSocket connection closed')
   }
 
+  // Core send logic — accepts query text directly, independent of inputText state
+  const sendMessage = (queryText: string) => {
+    if (!queryText.trim() || isLoading || !wsServiceRef.current?.isConnected()) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: queryText.trim(),
+      sender: 'user',
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setIsLoading(true)
+    streamingTextRef.current = ''
+    thinkingTextRef.current = ''
+    setStreamingText('')
+    setThinkingText('')
+
+    wsServiceRef.current.sendQuery(queryText.trim(), sessionId!, user?.sub)
+  }
+
   // Send message via WebSocket
   const handleSendMessage = () => {
     if (!inputText.trim() || isLoading || !wsServiceRef.current?.isConnected()) {
@@ -215,41 +236,16 @@ function Chat() {
       return
     }
 
-    const queryText = inputText.trim()
-
-    // Add user message to UI
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: queryText,
-      sender: 'user',
-      timestamp: new Date()
-    }
-
-    setMessages(prev => [...prev, userMessage])
+    sendMessage(inputText)
     setInputText('')
-    setIsLoading(true)
-    streamingTextRef.current = ''
-    thinkingTextRef.current = ''
-    setStreamingText('')
-    setThinkingText('')
-
-    // Send via WebSocket
-    wsServiceRef.current.sendQuery(queryText, sessionId!, user?.sub)
   }
 
-  // Auto-send initial query from Home page navigation
+  // Auto-send initial query from Home page navigation as soon as WebSocket is connected
   useEffect(() => {
     const initialQuery = (location.state as any)?.initialQuery
-    if (initialQuery && sessionId && !initialQuerySent.current && wsServiceRef.current?.isConnected()) {
+    if (initialQuery && sessionId && !initialQuerySent.current && connectionStatus === 'connected') {
       initialQuerySent.current = true
-      setInputText(initialQuery)
-
-      // Wait a bit for connection to stabilize
-      setTimeout(() => {
-        if (wsServiceRef.current?.isConnected()) {
-          handleSendMessage()
-        }
-      }, 500)
+      sendMessage(initialQuery)
     }
   }, [sessionId, location.state, connectionStatus])
 
