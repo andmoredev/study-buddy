@@ -171,6 +171,13 @@ button:focus-visible {
   margin-bottom: 3rem;
 }
 
+.home-logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
 .home-header h1 {
   font-size: 3rem;
   font-weight: 700;
