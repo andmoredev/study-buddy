@@ -27,8 +27,6 @@ function Home() {
     <div className="home">
       <div className="home-header">
         <img src="/SuddyBuddyAI_NB.png" alt="StudyBuddy AI" className="home-logo" />
-        <h1>StudyBuddy AI</h1>
-        <p>Tu tutor inteligente 24/7</p>
       </div>
 
       <div className="home-chat-container">

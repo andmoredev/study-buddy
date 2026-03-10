@@ -172,9 +172,8 @@ button:focus-visible {
 }
 
 .home-logo {
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
+  width: 800px;
+  height: auto;
   margin-bottom: 1rem;
 }
 
