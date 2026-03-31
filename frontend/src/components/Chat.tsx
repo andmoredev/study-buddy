@@ -32,6 +32,8 @@ function Chat() {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const isAtBottomRef = useRef(true)
   const initialQuerySent = useRef(false)
   const wsServiceRef = useRef<WebSocketService | null>(null)
   const streamingTextRef = useRef('')
@@ -249,9 +251,23 @@ function Chat() {
     }
   }, [sessionId, location.state, connectionStatus])
 
-  // Auto-scroll to bottom
+  // Track whether user is at (or near) the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (!container) return
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 50
+    }
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Auto-scroll to bottom only when user is already at the bottom
+  useEffect(() => {
+    if (isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages, streamingText])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -292,7 +308,7 @@ function Chat() {
         )}
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesContainerRef}>
         {messages.map(message => (
           <div key={message.id} className={`message ${message.sender} ${message.error ? 'error' : ''}`}>
             <div className="message-content">
