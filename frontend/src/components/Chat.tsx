@@ -127,24 +127,21 @@ function Chat() {
     if (event.current_tool_use?.name) {
       const toolName = event.current_tool_use.name
       setCurrentTool(toolName)
-      // Move any text accumulated so far into thinking
-      setStreamingText(prev => {
-        if (prev) {
-          thinkingTextRef.current = thinkingTextRef.current + prev
-          setThinkingText(t => t + prev)
-        }
-        streamingTextRef.current = ''
-        return ''
-      })
+      // Move any text accumulated so far into thinking (read ref directly to avoid batching race)
+      const accumulated = streamingTextRef.current
+      if (accumulated) {
+        thinkingTextRef.current += accumulated
+        setThinkingText(t => t + accumulated)
+      }
+      streamingTextRef.current = ''
+      setStreamingText('')
     }
 
     // Handle text streaming
     if (event.data) {
-      setStreamingText(prev => {
-        const next = prev + event.data
-        streamingTextRef.current = next
-        return next
-      })
+      const next = streamingTextRef.current + event.data
+      streamingTextRef.current = next
+      setStreamingText(next)
     }
 
     // Log lifecycle events
@@ -160,7 +157,7 @@ function Chat() {
   // Handle completion of streaming
   const handleComplete = () => {
     const text = streamingTextRef.current
-    const thinking = thinkingTextRef.current
+    const thinking = thinkingTextRef.current.trim()
 
     if (text || thinking) {
       const agentMessage: Message = {
