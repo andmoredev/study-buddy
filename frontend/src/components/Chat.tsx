@@ -32,8 +32,12 @@ function Chat() {
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const isAtBottomRef = useRef(true)
   const initialQuerySent = useRef(false)
   const wsServiceRef = useRef<WebSocketService | null>(null)
+  const streamingTextRef = useRef('')
+  const thinkingTextRef = useRef('')
 
   // Generate a session ID if we don't have one
   useEffect(() => {
@@ -123,18 +127,21 @@ function Chat() {
     if (event.current_tool_use?.name) {
       const toolName = event.current_tool_use.name
       setCurrentTool(toolName)
-      // Move any text accumulated so far into thinking
-      setStreamingText(prev => {
-        if (prev) {
-          setThinkingText(t => t + prev)
-        }
-        return ''
-      })
+      // Move any text accumulated so far into thinking (read ref directly to avoid batching race)
+      const accumulated = streamingTextRef.current
+      if (accumulated) {
+        thinkingTextRef.current += accumulated
+        setThinkingText(t => t + accumulated)
+      }
+      streamingTextRef.current = ''
+      setStreamingText('')
     }
 
     // Handle text streaming
     if (event.data) {
-      setStreamingText(prev => prev + event.data)
+      const next = streamingTextRef.current + event.data
+      streamingTextRef.current = next
+      setStreamingText(next)
     }
 
     // Log lifecycle events
@@ -149,15 +156,20 @@ function Chat() {
 
   // Handle completion of streaming
   const handleComplete = () => {
-    if (streamingText || thinkingText) {
+    const text = streamingTextRef.current
+    const thinking = thinkingTextRef.current.trim()
+
+    if (text || thinking) {
       const agentMessage: Message = {
         id: Date.now().toString(),
-        text: streamingText,
-        ...(thinkingText ? { thinking: thinkingText } : {}),
+        text,
+        ...(thinking ? { thinking } : {}),
         sender: 'agent',
         timestamp: new Date()
       }
       setMessages(prev => [...prev, agentMessage])
+      streamingTextRef.current = ''
+      thinkingTextRef.current = ''
       setStreamingText('')
       setThinkingText('')
     }
@@ -179,6 +191,8 @@ function Chat() {
     }
 
     setMessages(prev => [...prev, errorMessage])
+    streamingTextRef.current = ''
+    thinkingTextRef.current = ''
     setStreamingText('')
     setThinkingText('')
     setCurrentTool(null)
@@ -191,6 +205,27 @@ function Chat() {
     console.log('🔌 WebSocket connection closed')
   }
 
+  // Core send logic — accepts query text directly, independent of inputText state
+  const sendMessage = (queryText: string) => {
+    if (!queryText.trim() || isLoading || !wsServiceRef.current?.isConnected()) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: queryText.trim(),
+      sender: 'user',
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setIsLoading(true)
+    streamingTextRef.current = ''
+    thinkingTextRef.current = ''
+    setStreamingText('')
+    setThinkingText('')
+
+    wsServiceRef.current.sendQuery(queryText.trim(), sessionId!, user?.sub)
+  }
+
   // Send message via WebSocket
   const handleSendMessage = () => {
     if (!inputText.trim() || isLoading || !wsServiceRef.current?.isConnected()) {
@@ -200,45 +235,36 @@ function Chat() {
       return
     }
 
-    const queryText = inputText.trim()
-
-    // Add user message to UI
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: queryText,
-      sender: 'user',
-      timestamp: new Date()
-    }
-
-    setMessages(prev => [...prev, userMessage])
+    sendMessage(inputText)
     setInputText('')
-    setIsLoading(true)
-    setStreamingText('')
-    setThinkingText('')
-
-    // Send via WebSocket
-    wsServiceRef.current.sendQuery(queryText, sessionId!, user?.sub)
   }
 
-  // Auto-send initial query from Home page navigation
+  // Auto-send initial query from Home page navigation as soon as WebSocket is connected
   useEffect(() => {
     const initialQuery = (location.state as any)?.initialQuery
-    if (initialQuery && sessionId && !initialQuerySent.current && wsServiceRef.current?.isConnected()) {
+    if (initialQuery && sessionId && !initialQuerySent.current && connectionStatus === 'connected') {
       initialQuerySent.current = true
-      setInputText(initialQuery)
-
-      // Wait a bit for connection to stabilize
-      setTimeout(() => {
-        if (wsServiceRef.current?.isConnected()) {
-          handleSendMessage()
-        }
-      }, 500)
+      sendMessage(initialQuery)
     }
   }, [sessionId, location.state, connectionStatus])
 
-  // Auto-scroll to bottom
+  // Track whether user is at (or near) the bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const container = messagesContainerRef.current
+    if (!container) return
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      isAtBottomRef.current = scrollHeight - scrollTop - clientHeight < 50
+    }
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Auto-scroll to bottom only when user is already at the bottom
+  useEffect(() => {
+    if (isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages, streamingText])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -279,7 +305,7 @@ function Chat() {
         )}
       </div>
 
-      <div className="chat-messages">
+      <div className="chat-messages" ref={messagesContainerRef}>
         {messages.map(message => (
           <div key={message.id} className={`message ${message.sender} ${message.error ? 'error' : ''}`}>
             <div className="message-content">
