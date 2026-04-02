@@ -83,8 +83,8 @@ jobs:
         id: package
         uses: ./.github/actions/package-agent
         with:
-          agent-name: "agent"
-          agent-path: "backend/agents/agent"
+          agent-name: "study-buddy-ws"
+          agent-path: "backend/agents/study-buddy-ws"
           artifacts-bucket: ${{ secrets.ARTIFACTS_BUCKET_NAME }}
           python-version: '3.13'
           architecture: 'aarch64-manylinux2014'

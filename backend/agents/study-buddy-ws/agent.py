@@ -19,7 +19,7 @@ import os
 import json
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
-from strands_tools import use_llm, memory
+from strands_tools import current_time
 from strands.models import BedrockModel
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
@@ -145,7 +145,7 @@ async def websocket_handler(websocket, context):
                 agent = Agent(
                     agent_id="assistant",
                     model=BedrockModel(model_id=BEDROCK_MODEL_ID),
-                    tools=[memory, use_llm],
+                    tools=[current_time],
                     system_prompt=SYSTEM_PROMPT,
                     session_manager=session_manager,
                 )
@@ -154,34 +154,75 @@ async def websocket_handler(websocket, context):
             print(f"Messages in context: {len(agent.messages)}")
 
             # Stream events back to client in real-time
+            # Track thinking tag state across chunks
+            in_thinking = False
+            thinking_buffer = ""
+
             async for event in agent.stream_async(request):
                 # Extract only JSON-serializable data from the event.
                 # stream_async() can yield events containing non-serializable objects
                 # (e.g. the Agent instance in completion events), so we pick out
                 # the fields the client actually needs.
-                client_event = None
 
                 if event.get("data"):
-                    client_event = {"data": event["data"]}
+                    chunk = event["data"]
+
+                    # Parse <thinking>...</thinking> tags out of the data stream.
+                    # The model emits these as plain text deltas mixed with normal output.
+                    while chunk:
+                        if in_thinking:
+                            if "</thinking>" in chunk:
+                                end_idx = chunk.index("</thinking>")
+                                thinking_buffer += chunk[:end_idx]
+                                chunk = chunk[end_idx + len("</thinking>"):]
+                                in_thinking = False
+                                if thinking_buffer.strip():
+                                    await websocket.send_json({
+                                        "type": "stream_event",
+                                        "event": {"thinking": thinking_buffer.strip()}
+                                    })
+                                thinking_buffer = ""
+                            else:
+                                thinking_buffer += chunk
+                                chunk = ""
+                        else:
+                            if "<thinking>" in chunk:
+                                start_idx = chunk.index("<thinking>")
+                                before = chunk[:start_idx]
+                                chunk = chunk[start_idx + len("<thinking>"):]
+                                in_thinking = True
+                                if before:
+                                    await websocket.send_json({
+                                        "type": "stream_event",
+                                        "event": {"data": before}
+                                    })
+                            else:
+                                await websocket.send_json({
+                                    "type": "stream_event",
+                                    "event": {"data": chunk}
+                                })
+                                chunk = ""
 
                 elif event.get("current_tool_use"):
                     tool = event["current_tool_use"]
                     tool_name = tool.get("name")
                     if tool_name:
-                        client_event = {"current_tool_use": {"name": tool_name, "tool_use_id": tool.get("tool_use_id")}}
                         print(f"Tool use: {tool_name}")
+                        await websocket.send_json({
+                            "type": "stream_event",
+                            "event": {"current_tool_use": {"name": tool_name, "tool_use_id": tool.get("tool_use_id")}}
+                        })
 
                 elif event.get("init_event_loop"):
-                    client_event = {"init_event_loop": True}
-
-                elif event.get("complete"):
-                    client_event = {"complete": True}
-
-                # Only send events that have useful client-facing data
-                if client_event is not None:
                     await websocket.send_json({
                         "type": "stream_event",
-                        "event": client_event
+                        "event": {"init_event_loop": True}
+                    })
+
+                elif event.get("complete"):
+                    await websocket.send_json({
+                        "type": "stream_event",
+                        "event": {"complete": True}
                     })
 
             # Send completion signal for this turn
@@ -231,11 +272,7 @@ async def websocket_handler(websocket, context):
 
 @app.entrypoint
 def invoke(payload):
-    """
-    HTTP entrypoint (legacy support).
-
-    For real-time streaming, use the WebSocket endpoint instead.
-    """
+    """HTTP entrypoint for synchronous invocation."""
     request = payload.get("request", "")
 
     if not request:
@@ -250,13 +287,12 @@ def invoke(payload):
             runtime_session_id = f"session_{uuid.uuid4().hex[:16]}"
             print(f"Warning: Generated session ID: {runtime_session_id}")
 
-        tools = [memory, use_llm]
         session_manager = create_session_manager(runtime_session_id, user_id)
 
         agent = Agent(
             agent_id="assistant",
             model=BedrockModel(model_id=BEDROCK_MODEL_ID),
-            tools=tools,
+            tools=[current_time],
             system_prompt=SYSTEM_PROMPT,
             session_manager=session_manager,
         )
@@ -265,11 +301,10 @@ def invoke(payload):
         print(f"Messages loaded from memory: {len(agent.messages)}")
 
         result = agent(request)
-        response_text = str(result)
 
         return {
             "request": request,
-            "response": response_text,
+            "response": str(result),
         }
 
     except Exception as e:
