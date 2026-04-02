@@ -10,7 +10,7 @@ Parameters:
   AgentDirectDeployKey:
     Type: String
     Description: S3 key for agent deployment ZIP file
-    Default: "agents/study-buddy-ws.zip"
+    Default: "agents/study-buddy.zip"
 
   EnvironmentHash:
     Type: String
