@@ -5,7 +5,7 @@ A conversational assistant with:
 - Real-time streaming via WebSocket
 - Memory persistence across conversations
 - JWT-based user authentication
-- Tool access (memory, LLM)
+- Tool access (current_time)
 
 Required Environment Variables:
     - AGENTCORE_MEMORY_ID: AgentCore Memory resource ID for conversation persistence
@@ -154,75 +154,34 @@ async def websocket_handler(websocket, context):
             print(f"Messages in context: {len(agent.messages)}")
 
             # Stream events back to client in real-time
-            # Track thinking tag state across chunks
-            in_thinking = False
-            thinking_buffer = ""
-
             async for event in agent.stream_async(request):
                 # Extract only JSON-serializable data from the event.
                 # stream_async() can yield events containing non-serializable objects
                 # (e.g. the Agent instance in completion events), so we pick out
                 # the fields the client actually needs.
+                client_event = None
 
                 if event.get("data"):
-                    chunk = event["data"]
-
-                    # Parse <thinking>...</thinking> tags out of the data stream.
-                    # The model emits these as plain text deltas mixed with normal output.
-                    while chunk:
-                        if in_thinking:
-                            if "</thinking>" in chunk:
-                                end_idx = chunk.index("</thinking>")
-                                thinking_buffer += chunk[:end_idx]
-                                chunk = chunk[end_idx + len("</thinking>"):]
-                                in_thinking = False
-                                if thinking_buffer.strip():
-                                    await websocket.send_json({
-                                        "type": "stream_event",
-                                        "event": {"thinking": thinking_buffer.strip()}
-                                    })
-                                thinking_buffer = ""
-                            else:
-                                thinking_buffer += chunk
-                                chunk = ""
-                        else:
-                            if "<thinking>" in chunk:
-                                start_idx = chunk.index("<thinking>")
-                                before = chunk[:start_idx]
-                                chunk = chunk[start_idx + len("<thinking>"):]
-                                in_thinking = True
-                                if before:
-                                    await websocket.send_json({
-                                        "type": "stream_event",
-                                        "event": {"data": before}
-                                    })
-                            else:
-                                await websocket.send_json({
-                                    "type": "stream_event",
-                                    "event": {"data": chunk}
-                                })
-                                chunk = ""
+                    client_event = {"data": event["data"]}
 
                 elif event.get("current_tool_use"):
                     tool = event["current_tool_use"]
                     tool_name = tool.get("name")
                     if tool_name:
+                        client_event = {"current_tool_use": {"name": tool_name, "tool_use_id": tool.get("tool_use_id")}}
                         print(f"Tool use: {tool_name}")
-                        await websocket.send_json({
-                            "type": "stream_event",
-                            "event": {"current_tool_use": {"name": tool_name, "tool_use_id": tool.get("tool_use_id")}}
-                        })
 
                 elif event.get("init_event_loop"):
-                    await websocket.send_json({
-                        "type": "stream_event",
-                        "event": {"init_event_loop": True}
-                    })
+                    client_event = {"init_event_loop": True}
 
                 elif event.get("complete"):
+                    client_event = {"complete": True}
+
+                # Only send events that have useful client-facing data
+                if client_event is not None:
                     await websocket.send_json({
                         "type": "stream_event",
-                        "event": {"complete": True}
+                        "event": client_event
                     })
 
             # Send completion signal for this turn
