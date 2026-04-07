@@ -2,8 +2,6 @@
 
 AI-powered educational tutor built on AWS Bedrock AgentCore Runtime with real-time WebSocket streaming and conversation memory.
 
-> **Note:** This project was originally deployed under the `agentcore-chatbot-*` stack names. The stack names were changed to `studybuddy-ai-*` to avoid overwriting the original template deployment. If you previously deployed under the old names, those stacks will remain untouched — this creates new, separate stacks.
-
 ## Architecture
 
 ```
