@@ -5,7 +5,7 @@ A conversational assistant with:
 - Real-time streaming via WebSocket
 - Memory persistence across conversations
 - JWT-based user authentication
-- Tool access (memory, LLM)
+- Tool access (current_time)
 
 Required Environment Variables:
     - AGENTCORE_MEMORY_ID: AgentCore Memory resource ID for conversation persistence
@@ -19,7 +19,7 @@ import os
 import json
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
-from strands_tools import use_llm, memory
+from strands_tools import current_time
 from strands.models import BedrockModel
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import AgentCoreMemorySessionManager
@@ -145,7 +145,7 @@ async def websocket_handler(websocket, context):
                 agent = Agent(
                     agent_id="assistant",
                     model=BedrockModel(model_id=BEDROCK_MODEL_ID),
-                    tools=[memory, use_llm],
+                    tools=[current_time],
                     system_prompt=SYSTEM_PROMPT,
                     session_manager=session_manager,
                 )
@@ -231,11 +231,7 @@ async def websocket_handler(websocket, context):
 
 @app.entrypoint
 def invoke(payload):
-    """
-    HTTP entrypoint (legacy support).
-
-    For real-time streaming, use the WebSocket endpoint instead.
-    """
+    """HTTP entrypoint for synchronous invocation."""
     request = payload.get("request", "")
 
     if not request:
@@ -250,13 +246,12 @@ def invoke(payload):
             runtime_session_id = f"session_{uuid.uuid4().hex[:16]}"
             print(f"Warning: Generated session ID: {runtime_session_id}")
 
-        tools = [memory, use_llm]
         session_manager = create_session_manager(runtime_session_id, user_id)
 
         agent = Agent(
             agent_id="assistant",
             model=BedrockModel(model_id=BEDROCK_MODEL_ID),
-            tools=tools,
+            tools=[current_time],
             system_prompt=SYSTEM_PROMPT,
             session_manager=session_manager,
         )
@@ -265,11 +260,10 @@ def invoke(payload):
         print(f"Messages loaded from memory: {len(agent.messages)}")
 
         result = agent(request)
-        response_text = str(result)
 
         return {
             "request": request,
-            "response": response_text,
+            "response": str(result),
         }
 
     except Exception as e:
